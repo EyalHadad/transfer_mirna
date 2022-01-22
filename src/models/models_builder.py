@@ -4,8 +4,8 @@ from keras.constraints import maxnorm
 from keras.layers import Dense, Dropout, Input
 from keras.regularizers import l1
 
-from src.models.training.Base_trainer import BaseTrainObj
-from src.models.training.xgboos_trainer import XgboostTrainObj
+from src.models.training.base_model import BaseTrainObj
+from src.models.training.xgb_model import XgboostTrainObj
 
 
 def network_model(shape):
@@ -31,7 +31,8 @@ XGBS_PARAMS = {
     'colsample_bytree': [0.6],
     "lambda": [1],
     "n_jobs": [-1],
-
+    "verbosity": 0,
+    "silent": True,
 }
 
 

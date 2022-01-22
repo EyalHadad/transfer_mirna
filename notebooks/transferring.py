@@ -1,51 +1,69 @@
-from src.models.csv_handler import save_cross_org_table, save_transfer_table
-from src.models.transfer.Base_transfer import BaseTransferObj
-from src.models.transfer.xgboost_transfer import XgboostTransferObj
-from src.models.models_handler import *
 import copy
 
+from src.data.data_class import ScoreObj, DataOrg
+from src.handler import get_logger, timing
+from src.models.models_builder import get_models_dict
+from src.models.models_handler import *
+from src.models.param_class import TrainModelParam, EvalModelParam
 
-def run_transfer(model_type, trans_epochs, transfer_dict, tran_folder):
-    xgb_transfer_dict, base_transfer_dict = {}, {}
-    xgb_vanilla_dict, base_vanilla_dict = {}, {}
-    for src_model_name, src_dataset_list in transfer_dict.items():
-        xgb_transfer_dict[src_model_name] = {}
-        xgb_vanilla_dict[src_model_name] = {}
-        base_transfer_dict[src_model_name] = {}
-        base_vanilla_dict[src_model_name] = {}
-        base_obj = BaseTransferObj(src_model_name)
-        xgb_obj = XgboostTransferObj(src_model_name)
-        dest_dict = copy.deepcopy(transfer_dict)
-        del dest_dict[src_model_name]
-        for dst_model_name, dst_dataset_list in dest_dict.items():
-            base_obj.load_dst_data(dst_model_name,dst_dataset_list)
-            xgb_obj.load_dst_data(dst_model_name,dst_dataset_list)
-            xgb_transfer_dict[src_model_name][dst_model_name] = {}
-            xgb_vanilla_dict[src_model_name][dst_model_name] = {}
-            base_transfer_dict[src_model_name][dst_model_name] = {}
-            base_vanilla_dict[src_model_name][dst_model_name] = {}
-            for t_size in TRANSFER_SIZE_LIST:
-                v_score = base_obj.train_new_model(t_size, 'base')
-                base_vanilla_dict[src_model_name][dst_model_name][t_size] = v_score
-                score = base_obj.retrain_model(t_size,model_type,trans_epochs)
-                base_transfer_dict[src_model_name][dst_model_name][t_size] = score
-                v_score = xgb_obj.train_new_model(t_size, 'xgboost')
-                xgb_vanilla_dict[src_model_name][dst_model_name][t_size] = v_score
-                score = xgb_obj.retrain_model(t_size, model_type, trans_epochs)
-                xgb_transfer_dict[src_model_name][dst_model_name][t_size] = score
-    save_transfer_table(base_transfer_dict, 'base', trans_epochs,tran_folder)
-    save_transfer_table(base_vanilla_dict, 'base', 'baseline',tran_folder)
-    save_transfer_table(xgb_transfer_dict, 'xgboost', trans_epochs,tran_folder)
-    save_transfer_table(xgb_vanilla_dict, 'xgboost', 'baseline',tran_folder)
 
+@timing
+def run_transfer(training_dict, model_list, _metrics, folder_path):
+    t_parm = TrainModelParam(folder_path=folder_path, to_save=False)
+    e_parm = EvalModelParam(folder_path=folder_path)
+    scores = ScoreObj([f"{x}_baseline" for x in model_list] + model_list, _metrics)
+    for src_org_name, src_dataset_list in training_dict.items():
+        t_parm.src_model_to_load = src_org_name
+        dest_dict = copy.deepcopy(training_dict)
+        del dest_dict[src_org_name]
+        for dst_org_name, dst_dataset_list in dest_dict.items():
+            logger.info(f"Start executing src_org: {src_org_name} and dst_org: {dst_org_name}")
+            execute_over_src_dst(dst_dataset_list, dst_org_name, e_parm, model_list, scores, src_dataset_list,
+                                 src_org_name, t_parm)
+            logger.info(f"Finish executing src_org: {src_org_name} and dst_org: {dst_org_name}")
+
+    res_path = create_dir(MODELS_PATH / "transfer_tables")
+    scores.save_results(folder_name=res_path, header=['src_org', 'dst_org'] + TRANSFER_SIZE_LIST, extract_index=True)
+
+
+@timing
+def execute_over_src_dst(dst_dataset_list, dst_org_name, e_parm, model_list, scores, src_dataset_list, src_org_name,
+                         t_parm):
+    e_parm.src_model_name = f"{src_org_name}_{dst_org_name}"
+    t_parm.data_obj = DataOrg(src_org_name).load(datasets=src_dataset_list, is_train="train")
+    e_parm.data_obj = DataOrg(dst_org_name).load(datasets=dst_dataset_list, is_train="test")
+    for b_model in model_list:
+        t_parm.src_model_to_load = None
+        execute_learning(b_model, scores, t_parm, e_parm, f"{b_model}_baseline")
+        t_parm.src_model_to_load = src_org_name
+        execute_learning(b_model, scores, t_parm, e_parm, b_model)
+
+
+@timing
+def execute_learning(b_model, scores, t_parm: TrainModelParam, e_parm: EvalModelParam, file_name):
+    for t_size in TRANSFER_SIZE_LIST:
+        logger.info(f"Start running b_model: {file_name} with t_size: {t_size}")
+        if t_parm.src_model_to_load is None and t_size == 0:
+            scores.add_score(model_name=f"{file_name}", score_dict={}, key=e_parm.src_model_name,
+                             fill_empty=True)
+            continue
+        baseline_models = get_models_dict(len(e_parm.data_obj))
+        t_parm.part_train = t_size
+        baseline_models[b_model].train_model(t_parm=t_parm)
+        score_dict = baseline_models[b_model].evaluate_model(e_parm=e_parm)
+        scores.add_score(model_name=f"{file_name}", score_dict=score_dict, key=e_parm.src_model_name)
+        logger.info(f"Finish running b_model: {file_name} with t_size: {t_size}")
+
+
+def transfering_main():
+    global logger
+    logger = get_logger("time_logger")
+    # dir_path = MODELS_OBJECTS_PATH / "good_one"
+    dir_path = list_files(MODELS_OBJECTS_PATH)[-1]
+    logger.info("---Start transfer script---")
+    run_transfer(VS4_REG_DICT, ['base', 'xgb'], ['ACC', 'F1_score'], dir_path)
+    logger.info("---End transfer script---")
 
 
 if __name__ == '__main__':
-    transfer_folder_name = "dataset_models_" + datetime.now().strftime("%d_%m_%Y %H_%M_%S")
-    # run_training('base', TRAIN_DICT_REG, models_folder_name, 'datasets')
-    run_transfer('base',20,TRAIN_DICT_REG,transfer_folder_name)
-    # run_transfer(model_type='xgboost', trans_epochs=20)
-    # for i in range(20,120,20):
-    #     run_transfer(model_type='base', trans_epochs=i)
-    #     print(i)
-i = 9
+    transfering_main()

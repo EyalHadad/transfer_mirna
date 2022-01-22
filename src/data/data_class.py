@@ -52,14 +52,32 @@ class ScoreObj:
         self.model_list = model_list
         for model in model_list:
             for metric in metrics:
-                self.scores[model][metric] = {}
+                self.scores[model][metric] = collections.defaultdict(list)
 
-    def add_score(self, model_name, score_dict, org_name):
+    def add_score(self, model_name, score_dict, key, fill_empty=False):
         for metric in self.metrics:
-            self.scores[model_name][metric][org_name] = score_dict[metric]
+            if fill_empty:
+                self.scores[model_name][metric][key].append(0)
+            else:
+                self.scores[model_name][metric][key].append(round(score_dict[metric], 2))
 
-    def save_results(self, folder_name):
+    def index_to_col(self, df):
+        df2 = df.reset_index(level=0)
+        tmp = df2['index'].str.split('_', 1, expand=True)
+        df2.insert(0, 'src_org', tmp[0])
+        df2.insert(1, 'dst_org', tmp[1])
+        df2 = df2.drop(['index'], axis=1)
+        return df2
+
+    def save_results(self, folder_name, header=None, extract_index=False):
         for model in self.model_list:
             for metric in self.metrics:
                 data = pd.DataFrame.from_dict(self.scores[model][metric], orient='index')
-                data.to_csv(folder_name / f"{model}_{metric}.csv")
+                if extract_index:
+                    data = self.index_to_col(data)
+                if header is not None:
+                    try:
+                        data.columns = header
+                    except:
+                        print(f"problem {model} {metric}")
+                data.to_csv(folder_name / f"{model}_{metric}.csv",index=False)

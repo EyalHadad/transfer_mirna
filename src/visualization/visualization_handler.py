@@ -1,134 +1,60 @@
-import statistics
+import numpy as np
 import pandas as pd
-import os
-import seaborn as sns
 from matplotlib import pyplot as plt
-from src.analytics.analytics import find_most_distinguish_cols, update_dataset_diff_file
+
 from constants import *
-from constants import MODELS_STATISTICS_PATH
+from src.models.models_handler import list_files, create_dir
 
 
-def get_important_features(datasets_tuple, n=5):
-    f_path = os.path.join(MODELS_FEATURE_IMPORTANCE, 'datasets_diff_features.csv')
-    dataset_diff_file = pd.read_csv(f_path)
-    file_line = dataset_diff_file[
-                    (dataset_diff_file['src'] == datasets_tuple[0]) & (
-                            dataset_diff_file['dst'] == datasets_tuple[1])].iloc[0, :]
-    col_names = [str(x) for x in range(n + 1)]
-    important_deatures = [file_line[x] for x in col_names]
-    return important_deatures
+def create_heatmaps(cross_org_data_path: Path):
+    graph_dir_path = create_dir(MODELS_GRAPHS)
+    for file in list_files(cross_org_data_path):
+        heatmap_dict = acc_heatmap_dict if 'ACC' in file.stem else f1_heatmap_dict
+        data = pd.read_csv(file, index_col=0)
+        draw_heatmap(data=data, img_path=graph_dir_path / f"{file.stem}_heatmap.png", **heatmap_dict)
 
 
-def create_imp_features_file(dataset_list, imp_features):
-    for d in dataset_list:
-        train = pd.read_csv(os.path.join(PROCESSED_TRAIN_PATH, f"{d[0][0]}_train.csv"), index_col=False)
-        train = train.drop(FEATURES_TO_DROP, axis=1)
-        test = pd.read_csv(os.path.join(PROCESSED_TEST_PATH, f"{d[0][1]}_test.csv"), index_col=False)
-        test = test.drop(FEATURES_TO_DROP, axis=1)
-        dist_list = find_most_distinguish_cols(train, test, n=len(imp_features), df_col=imp_features, return_all=True)
-        # dist_list = [str(x) for x in dist_list]
-        col_names = [x[0] for x in dist_list]
-        values = [str(x[2]) for x in dist_list]
-        update_dataset_diff_file(values, src_org=d[0][0], dst_org=d[0][1],
-                                 output_f_name='datasets_diff_features_lineplot.csv', file_col=col_names)
-
-
-def draw_dataset_feature_importance_lineplot():
-    f_path = os.path.join(MODELS_FEATURE_IMPORTANCE, 'datasets_diff_features_lineplot.csv')
-    org_data = pd.read_csv(f_path, index_col=False)
-    for d in DATASETS:
-        for f in ['src', 'dst']:
-            data = org_data.copy()
-            data = data[data[f] == d]
-            # data = data.iloc[[0, 10, 20, 30, 40, 48], :]
-            # data = data.iloc[[0, 10, 18, 28, 38, 43], :]
-            data.drop(['src', 'dst'], axis=1, inplace=True)
-            plt.clf()
-            sns.set_theme(style="whitegrid")
-            ax = sns.lineplot(data=data, linewidth=2.5)
-            plt.title('Features correlations between datasets', fontsize=15)
-            plt.xlabel("Sorted models by AAC (0 is the lowest)", fontsize=13)
-            plt.ylabel("Correlation", fontsize=13)
-            ax.title.set_color('purple')
-            plt.legend(title='Features', loc='upper left')
-            plt.setp(ax.get_legend().get_texts(), fontsize='8')  # for legend text
-            # plt.show()
-            plt.savefig(os.path.join(MODELS_FEATURE_IMPORTANCE, f"Features correlations between datasets_{d}_{f}.png"))
-
-
-def create_datasets_features_importance_file(f_names):
-    data1 = pd.read_csv(os.path.join(MODELS_CROSS_ORG_TABELS, f_names['miRNA_Net']), index_col=0)
-    data2 = pd.read_csv(os.path.join(MODELS_CROSS_ORG_TABELS, f_names['xgboost']), index_col=0)
-    avg_dataset_dict = [data1 + data2][0].div(2).stack().to_dict()
-    dataset_list = [(k, v) for k, v in sorted(avg_dataset_dict.items(), key=lambda item: item[1])]
-    cross_org_dataset_list = [t for t in dataset_list if t[0][0][:-1] != t[0][1][:-1]]
-    # imp_features = get_important_features(dataset_list[0][0])
-    imp_features = GOOD_MODEL_SHAP_FEATURES
-    create_imp_features_file(cross_org_dataset_list, imp_features)
-
-
-def create_heatmaps(f_names, metric, t_type):
-    heatmap_dict = {"cmap": "RdBu_r", "square": True, "linewidths": 3, "annot": True, "vmin": 0, "vmax": 1,"cbar_kws":None}
-    data1 = pd.read_csv(os.path.join(MODELS_CROSS_ORG_TABELS, f_names['miRNA_Net']), index_col=0)
-    data2 = pd.read_csv(os.path.join(MODELS_CROSS_ORG_TABELS, f_names['xgboost']), index_col=0)
-    if metric == 'ACC':
-        heatmap_dict['vmin'] = 0.5
-        heatmap_dict['cmap'] = "RdBu_r"
-        heatmap_dict['cbar_kws'] = {'label': 'ACC'}
-
-    else:
-        heatmap_dict['vmin'] = 0
-        heatmap_dict['cmap'] = sns.diverging_palette(145, 300, s=60, as_cmap=True)
-        heatmap_dict['cbar_kws'] = {'label': 'F1 Score'}
-    # heatmap_dict['vmin'] = min(data1.values.min(), data2.values.min())
-    # heatmap_dict['vmax'] = max(data1.values.max(), data2.values.max())
-    draw_heatmap(data=data1, img_name=f"base_{t_type}_heatmap_{metric}.png",
-                 img_title=f"base_{t_type}_heatmap_{metric}", **heatmap_dict)
-    draw_heatmap(data=data2, img_name=f"xgboost_{t_type}_heatmap_{metric}.png",
-                 img_title=f"xgboost_{t_type}_heatmap_{metric}", **heatmap_dict)
-    new_data = data1 - data2
-    limit_num = max(new_data.values.max(), abs(new_data.values.min()))
-    heatmap_dict['vmin'] = -limit_num
-    heatmap_dict['vmax'] = limit_num
-    draw_heatmap(data=new_data, img_name=f"{t_type}_{metric}_diff.png", img_title=f"{t_type}_{metric}_diff",
-                 **heatmap_dict)
-
-
-def draw_heatmap(data, img_name, img_title, xlabel='Testing Dataset', ylabel='Training Dataset', **kwargs):
+def draw_heatmap(data, img_path, **kwargs):
     ax = sns.heatmap(data, **kwargs)
-    # plt.title(img_title, fontsize=15)
-    plt.xlabel(xlabel, fontsize=10)
-    plt.ylabel(ylabel, fontsize=10)
+    plt.xlabel('Testing Dataset', fontsize=10)
+    plt.ylabel('Training Dataset', fontsize=10)
     ax.xaxis.label.set_color('purple')
-    # ax.title.set_color('purple')
     ax.yaxis.label.set_color('purple')
     ax.figure.tight_layout()
-    plt.savefig(os.path.join(MODELS_GRAPHS_HEATMAP, img_name))
+    plt.savefig(img_path)
     plt.clf()
 
 
-def get_statistic_str(row, action):
-    str_list = [row[str(x)].split(":") for x in TRANSFER_SIZE_LIST]
-    num_list = [[float(x) for x in lst] for lst in str_list]
-    if action == 'std':
-        num_list = [round(statistics.stdev(v), 2) for v in num_list]
-    elif action == 'avg':
-        num_list = [round(statistics.mean(v), 2) for v in num_list]
-    r_list = ','.join([str(x) for x in num_list])
-    return r_list
+def create_transfer_graphs(transfer_table_path, metrics):
+    graph_dir_path = create_dir(MODELS_GRAPHS)
+    for metric in metrics:
+        graph_dict = dict()
+        for file in list_files(transfer_table_path):
+            if metric in file.stem:
+                data = pd.read_csv(file).iloc[:, :-1]
+                data = data.set_index(data['src_org'] + "_" + data['dst_org'])
+                data = data.drop(['src_org', 'dst_org'], axis=1)
+                graph_dict[file.stem] = data
+
+        transfer_model_index = graph_dict[list(graph_dict.keys())[0]].index
+        for ind in transfer_model_index:
+            plot_df = pd.DataFrame()
+            for k, trans_df in graph_dict.items():
+                plot_df = plot_df.append(pd.Series(data=trans_df.loc[ind], name=k))
+            draw_transfer_graph(plot_df, ind, graph_dir_path / f"{ind}.png")
 
 
-def save_statistic_file(model_type, action):
-    data = pd.read_csv(os.path.join(MODELS_OBJECTS_TRANSFER_TABLES, f"{model_type}_transfer.csv"))
-    out_f = os.path.join(MODELS_STATISTICS_PATH, f"{model_type}_{action}.csv")
-    with open(out_f, 'w') as f:
-        f_header = ['model'] + TRANSFER_SIZE_LIST + ['\n']
-        f.write(','.join(str(x) for x in f_header))
-        data.apply(
-            lambda row: f.write("{0}_{1},{2}\n".format(row['src_org'], row['dst_org'], get_statistic_str(row, action))),
-            axis=1)
-
-
-def file_exists(model, file_type):
-    f_path = os.path.join(MODELS_STATISTICS_PATH, f"{model}_{file_type}.csv")
-    return os.path.exists(f_path)
+def draw_transfer_graph(data, org_names, img_path):
+    sns.set_theme(style="darkgrid")
+    labels = [x.replace("base_", "miRNA_NET_") for x in data.index]
+    ax = sns.lineplot(data=data.T, dashes=False, linewidth=2.5)
+    ax.set(yticks=np.linspace(0, 1, 11))
+    ax.legend(labels)
+    plt.title(f"{org_names}", fontsize=15)
+    plt.xlabel('#Target observations', fontsize=10)
+    plt.ylabel('AUC', fontsize=10)
+    plt.legend(loc='lower right')
+    ax.title.set_color('purple')
+    ax.figure.tight_layout()
+    plt.savefig(img_path)
+    plt.clf()
