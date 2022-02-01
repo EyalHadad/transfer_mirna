@@ -69,15 +69,15 @@ class ScoreObj:
         df2 = df2.drop(['index'], axis=1)
         return df2
 
-    def save_results(self, folder_name, header=None, extract_index=False):
+    def save_results(self, folder_name, header=None, keep_index=True):
         for model in self.model_list:
             for metric in self.metrics:
                 data = pd.DataFrame.from_dict(self.scores[model][metric], orient='index')
-                if extract_index:
+                if not keep_index:
                     data = self.index_to_col(data)
                 if header is not None:
                     try:
                         data.columns = header
                     except:
                         print(f"problem {model} {metric}")
-                data.to_csv(folder_name / f"{model}_{metric}.csv",index=False)
+                data.to_csv(folder_name / f"{model}_{metric}.csv",index=keep_index)

@@ -2,13 +2,13 @@ from constants import *
 from src.data.data_class import ScoreObj, DataOrg
 from src.handler import get_logger, timing
 from src.models.models_builder import get_models_dict
-from src.models.models_handler import list_files, create_dir
+from src.models.models_handler import list_files, create_dir_with_time
 from src.models.param_class import EvalModelParam
 
 
 @timing
 def create_cross_org_tables(training_dict, model_list, metrics, folder_path):
-    e_parm = EvalModelParam(folder_path=MODELS_OBJECTS_PATH / folder_path, to_load=True)
+    e_parm = EvalModelParam(folder_path=folder_path, to_load=True)
     scores = ScoreObj(model_list, metrics)
     for src_org_name, src_dataset_list in training_dict.items():
         e_parm.src_model_name = src_org_name
@@ -21,7 +21,7 @@ def create_cross_org_tables(training_dict, model_list, metrics, folder_path):
                 score_dict = model.evaluate_model(e_parm=e_parm)
                 scores.add_score(model_name=model_name, score_dict=score_dict, key=dst_org_name)
             logger.info(f"Finish cross orgs for src_org: {src_org_name} and dst_org: {dst_org_name}")
-    res_path = create_dir(MODELS_PATH / "cross_org_tabels")
+    res_path = create_dir_with_time(MODELS_PATH / "cross_org_tabels")
     scores.save_results(folder_name=res_path, header=list(training_dict.keys()))
 
 

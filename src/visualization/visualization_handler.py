@@ -3,11 +3,11 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from constants import *
-from src.models.models_handler import list_files, create_dir
+from src.models.models_handler import list_files, create_dir_with_time
 
 
 def create_heatmaps(cross_org_data_path: Path):
-    graph_dir_path = create_dir(MODELS_GRAPHS)
+    graph_dir_path = create_dir_with_time(MODELS_GRAPHS)
     for file in list_files(cross_org_data_path):
         heatmap_dict = acc_heatmap_dict if 'ACC' in file.stem else f1_heatmap_dict
         data = pd.read_csv(file, index_col=0)
@@ -26,12 +26,12 @@ def draw_heatmap(data, img_path, **kwargs):
 
 
 def create_transfer_graphs(transfer_table_path, metrics):
-    graph_dir_path = create_dir(MODELS_GRAPHS)
+    graph_dir_path = create_dir_with_time(MODELS_GRAPHS)
     for metric in metrics:
         graph_dict = dict()
         for file in list_files(transfer_table_path):
             if metric in file.stem:
-                data = pd.read_csv(file).iloc[:, :-1]
+                data = pd.read_csv(file).iloc[:, 1:]
                 data = data.set_index(data['src_org'] + "_" + data['dst_org'])
                 data = data.drop(['src_org', 'dst_org'], axis=1)
                 graph_dict[file.stem] = data
@@ -41,7 +41,7 @@ def create_transfer_graphs(transfer_table_path, metrics):
             plot_df = pd.DataFrame()
             for k, trans_df in graph_dict.items():
                 plot_df = plot_df.append(pd.Series(data=trans_df.loc[ind], name=k))
-            draw_transfer_graph(plot_df, ind, graph_dir_path / f"{ind}.png")
+            draw_transfer_graph(plot_df, ind, graph_dir_path / f"{ind}_{metric}.png")
 
 
 def draw_transfer_graph(data, org_names, img_path):

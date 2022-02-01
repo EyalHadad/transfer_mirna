@@ -22,8 +22,8 @@ def run_transfer(training_dict, model_list, _metrics, folder_path):
                                  src_org_name, t_parm)
             logger.info(f"Finish executing src_org: {src_org_name} and dst_org: {dst_org_name}")
 
-    res_path = create_dir(MODELS_PATH / "transfer_tables")
-    scores.save_results(folder_name=res_path, header=['src_org', 'dst_org'] + TRANSFER_SIZE_LIST, extract_index=True)
+    res_path = create_dir_with_time(MODELS_PATH / "transfer_tables")
+    scores.save_results(folder_name=res_path, header=['src_org', 'dst_org'] + TRANSFER_SIZE_LIST, keep_index=False)
 
 
 @timing

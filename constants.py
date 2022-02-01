@@ -33,3 +33,6 @@ FEATURES_TO_DROP = ['mRNA_start', 'label', 'mRNA_name', 'target sequence', 'micr
 
 GOOD_MODEL_SHAP_FEATURES = ['Energy_MEF_local_target', 'Energy_MEF_Duplex', 'miRNAMatchPosition_1',
                             'miRNAMatchPosition_9', 'miRNAPairingCount_Total_GU']
+
+VS4_REG_DICT = {"worm": ["worm1", "worm2"], "cow": ["cow1"], "human": ["human1", "human2", "human3"],
+                "mouse": ["mouse1", "mouse2"]}

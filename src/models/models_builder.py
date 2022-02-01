@@ -10,13 +10,15 @@ from src.models.training.xgb_model import XgboostTrainObj
 
 def network_model(shape):
     x = Input(shape=(shape,), name="input")
-    ann_dense1 = Dense(100, activation='tanh', name='dense_100')(x)
-    ann_dense2 = Dense(50, activation='tanh', kernel_constraint=maxnorm(3), activity_regularizer=l1(0.001),
-                       kernel_regularizer=l1(0.001), name='dense_50')(ann_dense1)
-    ann_dropout = Dropout(rate=0.5, name='dropout')(ann_dense2)
-    ann_dense3 = Dense(20, activation='tanh', name='dense_20')(ann_dropout)
-    ann_output = Dense(1, activation='sigmoid', name='output')(ann_dense3)
-    model = Model(x, ann_output, name="ann_model")
+    _model = Dense(300, activation='relu')(x)
+    _model = Dropout(rate=0.5)(_model)
+    _model = Dense(200, activation='relu')(_model)
+    _model = Dropout(rate=0.5)(_model)
+    _model = Dense(100, activation='relu')(_model)
+    _model = Dropout(rate=0.5)(_model)
+    _model = Dense(20, activation='relu')(_model)
+    _model = Dense(1, activation='sigmoid')(_model)
+    model = Model(x, _model, name="ann_model")
     return model
 
 

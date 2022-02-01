@@ -1,11 +1,11 @@
 import logging
+from pathlib import Path
 
 import matplotlib.pyplot as plt
-from keras.optimizers import SGD
+from keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 
 from src.models.model_learner import ModelLearner, create_evaluation_dict
-from src.models.models_handler import create_dir_if_not_exists
 from src.models.param_class import TrainModelParam, EvalModelParam
 
 logging.getLogger("tensorflow").setLevel(logging.CRITICAL)
@@ -20,8 +20,7 @@ class BaseTrainObj(ModelLearner):
 
     def set_model(self, model):
         self.model = model
-        self.model.compile(optimizer=SGD(learning_rate=0.01, momentum=0.9, clipnorm=1.0), loss='binary_crossentropy',
-                           metrics=['acc'])
+        self.model.compile(optimizer=Adam(), loss='binary_crossentropy',metrics=['acc'])
 
     def train_model(self, t_parm: TrainModelParam):
         if t_parm.src_model_to_load is not None:
@@ -34,16 +33,16 @@ class BaseTrainObj(ModelLearner):
         else:
             x, x_v, y, y_v = train_test_split(t_parm.data_obj.data, t_parm.data_obj.label, train_size=t_parm.part_train,
                                               random_state=42)
-        self.history = self.model.fit(x, y, epochs=1, validation_data=(x_v, y_v), verbose=0)
+        self.history = self.model.fit(x, y, epochs=100, validation_data=(x_v, y_v), verbose=0)
         self.plot_learning_curves(t_parm.folder_path, t_parm.data_obj.dataset_name)
         if t_parm.to_save:
             model_folder_name = t_parm.folder_path / f"{t_parm.data_obj.dataset_name}/"
-            create_dir_if_not_exists(model_folder_name)
+            Path(model_folder_name).mkdir(parents=True, exist_ok=True)
             self.model.save_weights(str(t_parm.folder_path / f"{t_parm.data_obj.dataset_name}") + "/")
 
     def plot_learning_curves(self, folder_name, org_name):
         f_name = folder_name / "learning_results"
-        create_dir_if_not_exists(f_name)
+        Path(f_name).mkdir(parents=True, exist_ok=True)
         for metric in ['acc', 'loss']:
             self.draw_curve(metric, f_name, org_name)
 

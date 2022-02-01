@@ -15,4 +15,4 @@ def visualization_main(run_heatmap=False, run_transfer_graphs=False, cross_org_d
 
 
 if __name__ == '__main__':
-    visualization_main(run_heatmap=True, run_transfer_graphs=True)
+    visualization_main(run_heatmap=False, run_transfer_graphs=True)

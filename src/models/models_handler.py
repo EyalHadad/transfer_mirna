@@ -37,15 +37,10 @@ def save_metrics(eval_dict):
         writer.writerow(eval_dict)
 
 
-def create_dir_if_not_exists(dir_path):
-    if not os.path.isdir(dir_path):
-        os.mkdir(dir_path)
-
-
-def create_dir(parent_path: Path):
+def create_dir_with_time(parent_path: Path):
     f_time_name = datetime.now().strftime("%d_%m_%Y %H_%M_%S")
     dir_path = parent_path / f_time_name
-    create_dir_if_not_exists(dir_path)
+    Path(dir_path).mkdir(parents=True, exist_ok=True)
     return dir_path
 
 
