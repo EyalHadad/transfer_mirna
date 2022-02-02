@@ -9,13 +9,15 @@ class TrainModelParam:
     part_train: int
     to_save: bool
     src_model_to_load: str
+    epochs : int
 
-    def __init__(self, folder_path, data_obj=None, part_train=None, to_save=True, src_name_to_load=None):
+    def __init__(self, folder_path, data_obj=None, part_train=None, to_save=True, src_name_to_load=None, epochs=100):
         self.folder_path = folder_path
         self.data_obj = data_obj
         self.part_train = part_train
         self.to_save = to_save
         self.src_model_to_load = src_name_to_load
+        self.epochs = epochs
 
 
 class EvalModelParam:

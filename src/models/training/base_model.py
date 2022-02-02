@@ -33,7 +33,7 @@ class BaseTrainObj(ModelLearner):
         else:
             x, x_v, y, y_v = train_test_split(t_parm.data_obj.data, t_parm.data_obj.label, train_size=t_parm.part_train,
                                               random_state=42)
-        self.history = self.model.fit(x, y, epochs=100, validation_data=(x_v, y_v), verbose=0)
+        self.history = self.model.fit(x, y, epochs=t_parm.epochs, validation_data=(x_v, y_v), verbose=0)
         self.plot_learning_curves(t_parm.folder_path, t_parm.data_obj.dataset_name)
         if t_parm.to_save:
             model_folder_name = t_parm.folder_path / f"{t_parm.data_obj.dataset_name}/"

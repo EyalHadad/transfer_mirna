@@ -31,7 +31,7 @@ def create_transfer_graphs(transfer_table_path, metrics):
         graph_dict = dict()
         for file in list_files(transfer_table_path):
             if metric in file.stem:
-                data = pd.read_csv(file).iloc[:, 1:]
+                data = pd.read_csv(file)
                 data = data.set_index(data['src_org'] + "_" + data['dst_org'])
                 data = data.drop(['src_org', 'dst_org'], axis=1)
                 graph_dict[file.stem] = data

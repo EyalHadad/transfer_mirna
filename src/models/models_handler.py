@@ -17,9 +17,8 @@ def save_pkl_model(model, pkl_filename):
 
 def create_evaluation_dict(t_model_name, org_name, pred, y):
     model_name = '{0}_{1}'.format(t_model_name, org_name)
-    date_time = datetime.now().strftime("%d_%m_%Y %H_%M_%S")
     np.nan_to_num(pred, copy=False)
-    eval_dict = {'Model': model_name, 'Date': date_time, 'ACC': metrics.accuracy_score(y, np.round(pred))}
+    eval_dict = {'Model': model_name, 'Date': now(), 'ACC': metrics.accuracy_score(y, np.round(pred))}
     eval_dict['FPR'], eval_dict['TPR'], thresholds = metrics.roc_curve(y, pred)
     eval_dict['AUC'] = metrics.auc(eval_dict['FPR'], eval_dict['TPR'])
     eval_dict['PR'] = metrics.precision_score(y, np.round(pred), average='micro')
@@ -38,8 +37,7 @@ def save_metrics(eval_dict):
 
 
 def create_dir_with_time(parent_path: Path):
-    f_time_name = datetime.now().strftime("%d_%m_%Y %H_%M_%S")
-    dir_path = parent_path / f_time_name
+    dir_path = parent_path / now()
     Path(dir_path).mkdir(parents=True, exist_ok=True)
     return dir_path
 
@@ -48,3 +46,6 @@ def list_files(path: Path) -> List[Path]:
     dir_entries = sorted(os.scandir(path),
                          key=lambda file_entry: Path(file_entry).stem)
     return [Path(dir_entry.path) for dir_entry in dir_entries]
+
+def now() -> str:
+    return datetime.now().strftime("%Y-%m-%d--%H-%M-%S")

@@ -8,7 +8,7 @@ MODELS_PATH = Path("models")
 DATA_PATH = Path("data")
 MODELS_GRAPHS = Path("models/graphs")
 
-TRANSFER_SIZE_LIST = [0, 100, 200, 500, 700]
+TRANSFER_SIZE_LIST = [0, 500, 1000, 1500]
 DATASETS = ['cow1', 'worm1', 'worm2', 'human1', 'human2', 'human3', 'mouse1', 'mouse2']
 
 acc_heatmap_dict = {"cmap": "RdBu_r", "square": True, "linewidths": 3, "annot": True, "vmin": 0.5, "vmax": 1,

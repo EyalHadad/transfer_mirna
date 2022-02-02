@@ -9,7 +9,7 @@ from src.models.param_class import TrainModelParam, EvalModelParam
 
 @timing
 def run_transfer(training_dict, model_list, _metrics, folder_path):
-    t_parm = TrainModelParam(folder_path=folder_path, to_save=False)
+    t_parm = TrainModelParam(folder_path=folder_path, to_save=False, epochs=200)
     e_parm = EvalModelParam(folder_path=folder_path)
     scores = ScoreObj([f"{x}_baseline" for x in model_list] + model_list, _metrics)
     for src_org_name, src_dataset_list in training_dict.items():
@@ -61,7 +61,8 @@ def transfering_main():
     # dir_path = MODELS_OBJECTS_PATH / "good_one"
     dir_path = list_files(MODELS_OBJECTS_PATH)[-1]
     logger.info("---Start transfer script---")
-    run_transfer(VS4_REG_DICT, ['base', 'xgb'], ['ACC', 'F1_score'], dir_path)
+    run_transfer(VS4_REG_DICT, ['base'], ['ACC'], dir_path)
+    # run_transfer(VS4_REG_DICT, ['base', 'xgb'], ['ACC', 'F1_score'], dir_path)
     logger.info("---End transfer script---")
 
 

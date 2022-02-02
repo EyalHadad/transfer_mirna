@@ -15,4 +15,5 @@ def visualization_main(run_heatmap=False, run_transfer_graphs=False, cross_org_d
 
 
 if __name__ == '__main__':
-    visualization_main(run_heatmap=False, run_transfer_graphs=True)
+    f_path = MODELS_PATH / "transfer_tables" / '200_ep_big'
+    visualization_main(run_heatmap=False, run_transfer_graphs=True,transfer_table_path = f_path)
