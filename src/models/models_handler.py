@@ -24,6 +24,7 @@ def create_evaluation_dict(t_model_name, org_name, pred, y):
     eval_dict['PR'] = metrics.precision_score(y, np.round(pred), average='micro')
     eval_dict['F1_score'] = metrics.f1_score(y, np.round(pred))
     save_metrics(eval_dict)
+    print(f"The ACC score of {t_model_name},{org_name} is {eval_dict['ACC']}")
     return eval_dict
 
 

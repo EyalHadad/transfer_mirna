@@ -18,8 +18,7 @@ def run_transfer(training_dict, model_list, _metrics, folder_path):
         del dest_dict[src_org_name]
         for dst_org_name, dst_dataset_list in dest_dict.items():
             logger.info(f"Start executing src_org: {src_org_name} and dst_org: {dst_org_name}")
-            execute_over_src_dst(dst_dataset_list, dst_org_name, e_parm, model_list, scores, src_dataset_list,
-                                 src_org_name, t_parm)
+            execute_over_src_dst(dst_dataset_list, dst_org_name, e_parm, model_list, scores, src_org_name, t_parm)
             logger.info(f"Finish executing src_org: {src_org_name} and dst_org: {dst_org_name}")
 
     res_path = create_dir_with_time(MODELS_PATH / "transfer_tables")
@@ -27,10 +26,10 @@ def run_transfer(training_dict, model_list, _metrics, folder_path):
 
 
 @timing
-def execute_over_src_dst(dst_dataset_list, dst_org_name, e_parm, model_list, scores, src_dataset_list, src_org_name,
+def execute_over_src_dst(dst_dataset_list, dst_org_name, e_parm, model_list, scores, src_org_name,
                          t_parm):
     e_parm.src_model_name = f"{src_org_name}_{dst_org_name}"
-    t_parm.data_obj = DataOrg(src_org_name).load(datasets=src_dataset_list, is_train="train")
+    t_parm.data_obj = DataOrg(dst_org_name).load(datasets=dst_dataset_list, is_train="train")
     e_parm.data_obj = DataOrg(dst_org_name).load(datasets=dst_dataset_list, is_train="test")
     for b_model in model_list:
         t_parm.src_model_to_load = None

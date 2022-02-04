@@ -26,7 +26,7 @@ class XgboostTrainObj(ModelLearner):
             x, x_v, y, y_v = train_test_split(t_parm.data_obj.data, t_parm.data_obj.label, train_size=t_parm.part_train,
                                               random_state=42)
         self.model = self.model.fit(x, y, eval_metric=["error", "logloss"],
-                                    eval_set=[(x_v, y_v)], verbose=False)
+                                    eval_set=[(x_v, y_v)], verbose=False,xgb_model=self.model)
 
         if t_parm.to_save:
             self.model.save_model(t_parm.folder_path / f"{t_parm.data_obj.dataset_name}.dat")
