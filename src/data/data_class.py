@@ -80,4 +80,4 @@ class ScoreObj:
                         data.columns = header
                     except:
                         print(f"problem {model} {metric}")
-                data.to_csv(folder_name / f"{model}_{metric}.csv",index=keep_index)
+                data.T.to_csv(folder_name / f"{model}_{metric}.csv",index=keep_index)

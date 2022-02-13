@@ -25,6 +25,10 @@ class BaseTrainObj(ModelLearner):
     def train_model(self, t_parm: TrainModelParam):
         if t_parm.src_model_to_load is not None:
             self.model.load_weights(str(t_parm.folder_path / f"{t_parm.src_model_to_load}") + "/")
+            for l in self.model.layers:
+                l.trainable = False
+            self.model.get_layer('dense_20').trainable = True
+            self.model.get_layer('output').trainable = True
         # noinspection DuplicatedCode
         if t_parm.part_train is None:
             x, x_v, y, y_v = t_parm.data_obj.data, t_parm.data_obj.v_data, t_parm.data_obj.label, t_parm.data_obj.v_label
@@ -33,7 +37,7 @@ class BaseTrainObj(ModelLearner):
         else:
             x, x_v, y, y_v = train_test_split(t_parm.data_obj.data, t_parm.data_obj.label, train_size=t_parm.part_train,
                                               random_state=42)
-        self.history = self.model.fit(x, y, epochs=t_parm.epochs, validation_data=(x_v, y_v), verbose=1)
+        self.history = self.model.fit(x, y, epochs=t_parm.epochs, validation_data=(x_v, y_v), verbose=0)
         self.plot_learning_curves(t_parm.folder_path, t_parm.data_obj.dataset_name)
         if t_parm.to_save:
             model_folder_name = t_parm.folder_path / f"{t_parm.data_obj.dataset_name}/"

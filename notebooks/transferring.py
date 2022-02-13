@@ -9,7 +9,7 @@ from src.models.param_class import TrainModelParam, EvalModelParam
 
 @timing
 def run_transfer(training_dict, model_list, _metrics, folder_path):
-    t_parm = TrainModelParam(folder_path=folder_path, to_save=False, epochs=200)
+    t_parm = TrainModelParam(folder_path=folder_path, to_save=False)
     e_parm = EvalModelParam(folder_path=folder_path)
     scores = ScoreObj([f"{x}_baseline" for x in model_list] + model_list, _metrics)
     for src_org_name, src_dataset_list in training_dict.items():
@@ -32,10 +32,10 @@ def execute_over_src_dst(dst_dataset_list, dst_org_name, e_parm, model_list, sco
     t_parm.data_obj = DataOrg(dst_org_name).load(datasets=dst_dataset_list, is_train="train")
     e_parm.data_obj = DataOrg(dst_org_name).load(datasets=dst_dataset_list, is_train="test")
     for b_model in model_list:
-        t_parm.src_model_to_load = None
-        execute_learning(b_model, scores, t_parm, e_parm, f"{b_model}_baseline")
         t_parm.src_model_to_load = src_org_name
         execute_learning(b_model, scores, t_parm, e_parm, b_model)
+        t_parm.src_model_to_load = None
+        execute_learning(b_model, scores, t_parm, e_parm, f"{b_model}_baseline")
 
 
 @timing
@@ -60,8 +60,8 @@ def transfering_main():
     # dir_path = MODELS_OBJECTS_PATH / "good_one"
     dir_path = list_files(MODELS_OBJECTS_PATH)[-1]
     logger.info("---Start transfer script---")
-    run_transfer(VS4_REG_DICT, ['base'], ['ACC'], dir_path)
-    # run_transfer(VS4_REG_DICT, ['base', 'xgb'], ['ACC', 'F1_score'], dir_path)
+    # run_transfer(VS4_REG_DICT, ['xgb'], ['ACC'], dir_path)
+    run_transfer(VS4_REG_DICT, ['base', 'xgb'], ['ACC', 'F1_score'], dir_path)
     logger.info("---End transfer script---")
 
 

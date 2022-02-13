@@ -1,27 +1,26 @@
 import xgboost as xgb
 from keras import Model
-from keras.constraints import maxnorm
 from keras.layers import Dense, Dropout, Input
-from keras.regularizers import l1
 from tensorflow.keras import regularizers
+
 from src.models.training.base_model import BaseTrainObj
 from src.models.training.xgb_model import XgboostTrainObj
 
 
 def network_model(shape):
     x = Input(shape=(shape,), name="input")
-    _model = Dense(300, activation='relu',kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-    bias_regularizer=regularizers.l2(1e-4),
-    activity_regularizer=regularizers.l2(1e-5))(x)
-    _model = Dropout(rate=0.6)(_model)
-    _model = Dense(200,activation='relu',kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-    bias_regularizer=regularizers.l2(1e-4),
-    activity_regularizer=regularizers.l2(1e-5))(_model)
-    _model = Dropout(rate=0.6)(_model)
-    _model = Dense(100, activation='relu')(_model)
-    _model = Dropout(rate=0.6)(_model)
-    _model = Dense(20, activation='relu')(_model)
-    _model = Dense(1, activation='sigmoid')(_model)
+    _model = Dense(300, activation='relu', kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+                   bias_regularizer=regularizers.l2(1e-4),
+                   activity_regularizer=regularizers.l2(1e-5),name="dense_300")(x)
+    _model = Dropout(rate=0.6,name="dropout_1")(_model)
+    _model = Dense(200, activation='relu', kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+                   bias_regularizer=regularizers.l2(1e-4),
+                   activity_regularizer=regularizers.l2(1e-5),name="dense_200")(_model)
+    _model = Dropout(rate=0.6,name="dropout_2")(_model)
+    _model = Dense(100, activation='relu',name="dense_100")(_model)
+    _model = Dropout(rate=0.6,name="dropout_3")(_model)
+    _model = Dense(20, activation='relu',name="dense_20")(_model)
+    _model = Dense(1, activation='sigmoid',name="output")(_model)
     model = Model(x, _model, name="ann_model")
     return model
 
